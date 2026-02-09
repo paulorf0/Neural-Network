@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 // x, y = Entrada, Esperado
 using item = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
@@ -11,7 +12,7 @@ using data = std::vector<item>;
 
 
 struct prop{
-  std::vector<Eigen::VectorXd> nabla_w;
+  std::vector<Eigen::MatrixXd> nabla_w;
   std::vector<Eigen::VectorXd> nabla_b;
 };
 
@@ -19,9 +20,10 @@ class Network
 {
 public:
   Network(std::vector<int> sizes);
+  void SGD(data &train, double eta, int size_batch, int epoch);
+  Eigen::VectorXd feedforward(Eigen::VectorXd a);
 
 private:
-  void SGD(const data &train, double eta, int size_batch, int epoch);
   void update_network(data &xj, double eta);
   struct prop backprop(const item &x);
 

@@ -1,20 +1,19 @@
-#include "include/network.hpp"
 #include "network.hpp"
 
 Network::Network(std::vector<int> sizes)
     : sizes(sizes), num_layers(sizes.size())
 {
-  biases.reserve(num_layers);
-  weights.reserve(num_layers);
+  biases.resize(num_layers - 1);
+  weights.resize(num_layers - 1);
 
   for (size_t i = 0; i < num_layers - 1; i++)
   {
-    biases[i] = Eigen::VectorXd::Random(sizes[i]);
+    biases[i] = Eigen::VectorXd::Random(sizes[i + 1]);
     weights[i] = Eigen::MatrixXd::Random(sizes[i + 1], sizes[i]);
   }
 }
 
-void Network::SGD(const data &train, double eta, int size_batch, int epoch)
+void Network::SGD(data &train, double eta, int size_batch, int epoch)
 {
   std::random_device rd;
   std::mt19937 g(rd());
@@ -48,25 +47,24 @@ void Network::SGD(const data &train, double eta, int size_batch, int epoch)
 
 void Network::update_network(data &Xj, double eta)
 {
-  std::vector<Eigen::VectorXd> nabla_w(weights.size());
+  std::vector<Eigen::MatrixXd> nabla_w(weights.size());
   std::vector<Eigen::VectorXd> nabla_b(biases.size());
+
+  for (size_t i = 0; i < weights.size(); ++i)
+    nabla_w[i] = Eigen::MatrixXd::Zero(weights[i].rows(), weights[i].cols());
+  for (size_t i = 0; i < biases.size(); ++i)
+    nabla_b[i] = Eigen::VectorXd::Zero(biases[i].size());
 
   for (const auto &xj : Xj)
   {
-    const auto &[dnabla_b, dnabla_w] = backprop(xj);
+    auto p = backprop(xj);
+    const auto &[dnabla_w, dnabla_b] = p;
 
-    std::transform(
-        nabla_w.begin(), nabla_w.end(), dnabla_w.begin(), nabla_w.begin(),
-        [](Eigen::VectorXd &x, const Eigen::VectorXd &y) -> Eigen::VectorXd
-        {
-          x += y;
-          return x;
-        });
-    std::transform(nabla_b.begin(), nabla_b.end(), dnabla_b.begin(),
-                   nabla_b.begin(), [](Eigen::VectorXd &x, const Eigen::VectorXd &y)
-                   {
-                     x += y;
-                     return x; });
+    for (size_t i = 0; i < nabla_w.size(); ++i)
+    {
+      nabla_w[i] += dnabla_w[i];
+      nabla_b[i] += dnabla_b[i];
+    }
   }
 
   for (size_t i = 0; i < nabla_w.size(); i++)
@@ -83,15 +81,15 @@ void Network::update_network(data &Xj, double eta)
 struct prop Network::backprop(const item &x)
 {
 
-  std::vector<Eigen::VectorXd> nabla_w;
-  std::vector<Eigen::VectorXd> nabla_b;
+  std::vector<Eigen::MatrixXd> nabla_w(weights.size());
+  std::vector<Eigen::VectorXd> nabla_b(biases.size());
 
   auto [activation, y] = x;
   std::vector<Eigen::VectorXd> al;
   std::vector<Eigen::VectorXd> zs;
   al.push_back(activation);
 
-  for (size_t l = 0; l < num_layers; l++)
+  for (size_t l = 0; l < num_layers - 1; l++)
   {
     Eigen::VectorXd z = weights[l] * activation + biases[l];
 
@@ -102,24 +100,29 @@ struct prop Network::backprop(const item &x)
 
   Eigen::VectorXd delta = (al.back() - y).cwiseProduct(dSigmoid(zs.back()));
   nabla_b.back() = delta;
-  nabla_w.back() = al[al.size() - 2] * delta;
+  nabla_w.back() = delta * al[al.size() - 2].transpose();
 
   // Camada penultima (num_layers - 2)
-  for (size_t l = num_layers - 2; l > 1; l--)
+  for (int l = num_layers - 3; l >= 0; l--)
   {
     auto z = zs[l];
     auto dsigz = dSigmoid(z);
 
     delta = (weights[l + 1].transpose() * delta).cwiseProduct(dsigz);
     nabla_b[l] = delta;
-    nabla_w[l] = al[al.size() - 2] * delta;
+    nabla_w[l] = delta * al[l].transpose();
   }
 
-  struct prop p;
-  p.nabla_b = nabla_b;
-  p.nabla_w = nabla_w;
+  return {nabla_w, nabla_b};
+}
 
-  return p;
+Eigen::VectorXd Network::feedforward(Eigen::VectorXd a)
+{
+  for (size_t i = 0; i < num_layers - 1; i++)
+  {
+    a = sigmoid(weights[i] * a + biases[i]);
+  }
+  return a;
 }
 
 Eigen::VectorXd Network::sigmoid(Eigen::VectorXd x)
@@ -133,8 +136,8 @@ Eigen::VectorXd Network::dSigmoid(Eigen::VectorXd z)
 {
   const auto sigz = sigmoid(z);
   const Eigen::VectorXd one_minus_sigz =
-      z.unaryExpr([](double x)
-                  { return 1 - x; });
+      sigz.unaryExpr([](double x)
+                     { return 1 - x; });
 
   return sigz.cwiseProduct(one_minus_sigz);
 }
