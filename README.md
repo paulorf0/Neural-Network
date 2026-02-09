@@ -1,4 +1,4 @@
-# Recognize Numbers - Neural Network
+# Neural Network
 
 Este projeto implementa uma rede neural *feedforward* simples do zero, utilizando **C++23** e a biblioteca **Eigen** para operações de álgebra linear. É um template que pode ser utilizado para treinar a rede sobre qualquer tipo de dados.
 
