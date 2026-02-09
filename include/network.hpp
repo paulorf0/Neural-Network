@@ -19,8 +19,8 @@ class Network
 {
 public:
   Network(std::vector<int> sizes);
-  void SGD(data &train, double eta, int size_batch, int epoch);
-  Eigen::VectorXd feedforward(Eigen::VectorXd a);
+  void fit(data &train, double eta, int size_batch, int epoch);
+  Eigen::VectorXd transform(Eigen::VectorXd a);
 
 private:
   void update_network(data &xj, double eta);

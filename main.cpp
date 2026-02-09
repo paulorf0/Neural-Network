@@ -42,13 +42,13 @@ int main() {
     // Taxa de aprendizado (eta) = 3.0
     // Tamanho do batch = 4 (todos os exemplos)
     // Épocas = 5000
-    net.SGD(training_data, 3.0, 4, 5000);
+    net.fit(training_data, 3.0, 4, 5000);
 
     std::cout << "Treinamento concluído. Verificando resultados:" << std::endl;
 
     // Verifica o desempenho
     for(const auto& item : training_data) {
-        Eigen::VectorXd output = net.feedforward(item.first);
+        Eigen::VectorXd output = net.transform(item.first);
         
         std::cout << "Entrada: [" << item.first.transpose() << "] "
                   << "| Esperado: [" << item.second.transpose() << "] "

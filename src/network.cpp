@@ -13,7 +13,7 @@ Network::Network(std::vector<int> sizes)
   }
 }
 
-void Network::SGD(data &train, double eta, int size_batch, int epoch)
+void Network::fit(data &train, double eta, int size_batch, int epoch)
 {
   std::random_device rd;
   std::mt19937 g(rd());
@@ -116,7 +116,7 @@ struct prop Network::backprop(const item &x)
   return {nabla_w, nabla_b};
 }
 
-Eigen::VectorXd Network::feedforward(Eigen::VectorXd a)
+Eigen::VectorXd Network::transform(Eigen::VectorXd a)
 {
   for (size_t i = 0; i < num_layers - 1; i++)
   {
