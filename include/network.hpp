@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <random>
-#include <iostream>
 
 // x, y = Entrada, Esperado
 using item = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
